@@ -6,7 +6,6 @@ import platform
 import time
 from itertools import groupby
 
-
 def creation_date(path_to_file):
     """
     Try to get the date that a file was created, falling back to when it was
@@ -57,13 +56,12 @@ class Rates:
                 val['get'] = 1 / val['rate'] if val['rate'] < 1 else 1
                 data.append(val)
 
-        return sorted(data, key=lambda x: x['rate'])
+        return sorted(data, key=lambda x: x['rate'], reverse=True)
 
 
 class Common:
     def __init__(self):
         self.data = {}
-
     def get(self):
         return self.data
 
@@ -89,7 +87,8 @@ class Currencies(Common):
             }
 
         self.data = dict(sorted(self.data.items(), key=lambda x: x[1]['name']))
-        print(self.data)
+        # print(self.data)
+
 
 class Exchangers(Common):
     def __init__(self, text):
@@ -99,11 +98,10 @@ class Exchangers(Common):
             self.data[int(val[0])] = {
                 'id': int(val[0]),
                 'name': val[1],
-                'wmbl': int(val[3]),
-                'reserve_sum': float(val[4]),
+                # 'reserve_sum': float(val[4]),
             }
         self.data = dict(sorted(self.data.items()))
-        print(self.data)
+        # print(self.data)
 
     def extract_reviews(self, rates):
         for k, v in groupby(sorted(rates, key=lambda x: x['exchange_id']), lambda x: x['exchange_id']):
@@ -282,8 +280,10 @@ class BestChange:
 
 
 if __name__ == '__main__':
-    api = BestChange(cache_seconds=1, exchangers_reviews=True, split_reviews=True)
-
+    api = BestChange(cache_seconds=10, exchangers_reviews=True, split_reviews=True)
+    exchangers = api.exchangers()
+    for item in exchangers.get():
+        print()
     # currencies = api.currencies().get()
     # # top = api.top().get()
     #
