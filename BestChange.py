@@ -6,6 +6,7 @@ import platform
 import time
 from itertools import groupby
 
+
 def creation_date(path_to_file):
     """
     Try to get the date that a file was created, falling back to when it was
@@ -43,7 +44,6 @@ class Rates:
             except ZeroDivisionError:
                 # Иногда бывает курс N:0 и появляется ошибка деления на 0.
                 pass
-        # print(self.__data)
 
     def get(self):
         return self.__data
@@ -62,6 +62,7 @@ class Rates:
 class Common:
     def __init__(self):
         self.data = {}
+
     def get(self):
         return self.data
 
@@ -70,9 +71,6 @@ class Common:
             return False
 
         return self.data[id]['name'] if only_name else self.data[id]
-
-    # def search_by_name(self, name):
-    #     return {k: val for k, val in self.data.items() if val['name'].lower().count(name.lower())}
 
 
 class Currencies(Common):
@@ -85,9 +83,7 @@ class Currencies(Common):
                 'pos_id': int(val[1]),
                 'name': val[2],
             }
-
         self.data = dict(sorted(self.data.items(), key=lambda x: x[1]['name']))
-        # print(self.data)
 
 
 class Exchangers(Common):
@@ -98,72 +94,13 @@ class Exchangers(Common):
             self.data[int(val[0])] = {
                 'id': int(val[0]),
                 'name': val[1],
-                # 'reserve_sum': float(val[4]),
             }
         self.data = dict(sorted(self.data.items()))
-        # print(self.data)
 
     def extract_reviews(self, rates):
         for k, v in groupby(sorted(rates, key=lambda x: x['exchange_id']), lambda x: x['exchange_id']):
             if k in self.data.keys():
                 self.data[k]['reviews'] = list(v)[0]['reviews']
-
-
-# class Cities(Common):
-#     def __init__(self, text):
-#         super().__init__()
-#         for row in text.splitlines():
-#             val = row.split(';')
-#             self.data[int(val[0])] = {
-#                 'id': int(val[0]),
-#                 'name': val[1],
-#             }
-#
-#         self.data = dict(sorted(self.data.items(), key=lambda x: x[1]['name']))
-
-
-#
-# class Bcodes(Common):
-#     def __init__(self, text):
-#         super().__init__()
-#         for row in text.splitlines():
-#             val = row.split(';')
-#             self.data[int(val[0])] = {
-#                 'id': int(val[0]),
-#                 'code': val[1],
-#                 'name': val[2],
-#                 'source': val[3],
-#             }
-#
-#         self.data = dict(sorted(self.data.items(), key=lambda x: x[1]['code']))
-#
-#
-# class Brates(Common):
-#     def __init__(self, text):
-#         super().__init__()
-#         self.data = []
-#         for row in text.splitlines():
-#             val = row.split(';')
-#             self.data.append({
-#                 'give_id': int(val[0]),
-#                 'get_id': int(val[1]),
-#                 'rate': float(val[2]),
-#             })
-
-
-# class Top(Common):
-#     def __init__(self, text):
-#         super().__init__()
-#         self.data = []
-#         for row in text.splitlines():
-#             val = row.split(';')
-#             self.data.append({
-#                 'give_id': int(val[0]),
-#                 'get_id': int(val[1]),
-#                 'perc': float(val[2]),
-#             })
-
-# self.data = sorted(self.data, key=lambda x: x['perc'], reverse=True)
 
 
 class BestChange:
@@ -175,19 +112,10 @@ class BestChange:
     __file_currencies = 'bm_cy.dat'
     __file_exchangers = 'bm_exch.dat'
     __file_rates = 'bm_rates.dat'
-    # __file_cities = 'bm_cities.dat'
-    # __file_top = 'bm_top.dat'
-    # __file_bcodes = 'bm_bcodes.dat'
-    # __file_brates = 'bm_brates.dat'
 
     __currencies = None
     __exchangers = None
     __rates = None
-
-    # __cities = None
-    # __bcodes = None
-    # __brates = None
-    # __top = None
 
     def __init__(self, load=True, cache=True, cache_seconds=15, cache_path='./', exchangers_reviews=False,
                  split_reviews=False):
@@ -219,7 +147,11 @@ class BestChange:
                     and time.time() - creation_date(self.__cache_path) < self.__cache_seconds:
                 filename = self.__cache_path
             else:
+                start_time = time.time()
+                # print(f'Началась загрузка .zip с сайта bestchange, затрачено времени: ')
                 filename, headers = urlretrieve(self.__url, self.__cache_path if self.__cache else None)
+                # print("--- %s seconds ---" % (time.time() - start_time))
+
         except Exception:
             pass
         else:
@@ -238,22 +170,6 @@ class BestChange:
                 text = TextIOWrapper(zipfile.open(self.__file_exchangers), encoding=self.__enc).read()
                 self.__exchangers = Exchangers(text)
 
-            # if self.__file_cities in files:
-            #     text = TextIOWrapper(zipfile.open(self.__file_cities), encoding=self.__enc).read()
-            #     self.__cities = Cities(text)
-            #
-            # if self.__file_bcodes in files:
-            #     text = TextIOWrapper(zipfile.open(self.__file_bcodes), encoding=self.__enc).read()
-            #     self.__bcodes = Bcodes(text)
-            #
-            # if self.__file_brates in files:
-            #     text = TextIOWrapper(zipfile.open(self.__file_brates), encoding=self.__enc).read()
-            #     self.__brates = Brates(text)
-            # if self.__file_top in files:
-            #     text = TextIOWrapper(zipfile.open(self.__file_top), encoding=self.__enc).read()
-            #     self.__top = Top(text)
-
-            # ...
             if self.__exchangers_reviews:
                 self.exchangers().extract_reviews(self.rates().get())
 
@@ -266,24 +182,13 @@ class BestChange:
     def exchangers(self):
         return self.__exchangers
 
-    # def cities(self):
-    #     return self.__cities
-
-    # def bcodes(self):
-    #     return self.__bcodes
-    #
-    # def brates(self):
-    #     return self.__brates
-
-    # def top(self):
-    #     return self.__top
-
 
 if __name__ == '__main__':
-    api = BestChange(cache_seconds=10, exchangers_reviews=True, split_reviews=True)
-    exchangers = api.exchangers()
-    for item in exchangers.get():
-        print()
+    api = BestChange(cache_seconds=10)
+
+    # exchangers = api.exchangers()
+    # for item in exchangers.get():
+    #     print()
     # currencies = api.currencies().get()
     # # top = api.top().get()
     #
