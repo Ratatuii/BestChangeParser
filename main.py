@@ -11,6 +11,45 @@ ua = UserAgent()
 
 result = dict()
 
+""" 
+Наработка программы которая анализирует сайты BestChange и Binance. 
+Скрипт анализирует цены и ищет связки на которых можно заработать на разнице курсов криптовалют имея свободные средства. 
+Для работы программы необходимо:
+1) ввести желаемую стартовую валюту (USDT - по умолчанию, USDC, BUSD). 
+2) ввести стартовый капитал в долларах (например 1000)
+3) ввести минимальное кол-во отзывов обменников (например 200)
+4) ввести через сколько повторять проверки в цикле (например через каждые 10 минут)
+
+Скрипт ищет рабочие связки и выдает в терминал ввиде: 
+1. Binance: BUSD -> SHIB
+Ссылка на валютную пару:
+https://www.binance.com/ru/trade/SHIB_BUSD?theme=dark&type=spot
+
+2. BestChange: SHIB -> BUSD
+Цена: 74989.29588
+Обменник:CoinPayMaster
+Рейтинг обменника: 3193
+Ссылка на Обменник: 
+https://www.bestchange.ru/click.php?id=772&from=32&to=206&city=00
+Ссылка на BestChange: 
+https://www.bestchange.ru/index.php?from=32&to=206 
+
+К продаже: примерно 76103500.76103501 SHIB
+К получению: примерно 1014.8581856644979 BUSD
+
+Спред: 1.486%
+
+Итоговый заработок: 14.85818566
+<----------------------------------|---------------------------------->
+
+В скрипт по желанию можно так же добавить условие выдачи по % СПРЕДА и телеграмм бота, я уже наигрался с ним по этому 
+отправляю в свободный доступ на GitHub ^_^ , 
+
+PS. BestChange Очень не охотно отдает данные с сайта точнее отдает одним zip архивом в 2.5 мб, можно было написать с 
+нуля но если есть готовое решение, то зачем изобретать велосипед) по этому использовал часть кода API ( 
+https://pypi.org/project/bestchange-api/) переделав и убрав не нужные мне функции. 
+
+"""
 
 def get_num_coin_bestchange():
     if not os.path.exists(f'num_coin_bestchange.json'):
@@ -83,7 +122,6 @@ def app(start_capital=100, reviews=100, coin='USDT', data_coin=None):
         if not len(rows) and pairs[:4] == coin:
             continue
         for val in rows:
-            # {'give_id': 209, 'get_id': 36, 'exchange_id': 1013, 'rate': 0.563888575617458, 'reserve': 399832.83, 'reviews': '0.2528', 'min_sum': 546.0, 'max_sum': 10918.0, 'give': 1, 'get': 1.7734}
             id_exchange = exchangers[val['exchange_id']]['id']
             res[id_exchange] = {
                 'name_exchange': exchangers[val['exchange_id']]['name'],
@@ -119,15 +157,18 @@ def app(start_capital=100, reviews=100, coin='USDT', data_coin=None):
                         course_bectchange = round(result[pairs][j]['get_coin'], 5)
                         sell_bestchange_coin = buy_coin_binance * course_bectchange
 
-                    # print(f"Купили на binance {buy_coin_binance} монет по курсу {course_binance}")
-                    # print(f"Продаем на BestChange {buy_coin_binance} монет по курсу {course_bectchange} получаем {sell_bestchange_coin} {i['symbol'][-4:]}")
                     if (result[pairs][j]['sum_reviews'] > reviews) and (
                             buy_coin_binance > result[pairs][j]['min_sum_coin']) and (buy_coin_binance < result[pairs][j]['max_sum_coin']):
                         if sell_bestchange_coin > start_capital: # Проверяем есть ли выручка
                             print(f"1. Binance: {i['symbol'][-4:]} -> {i['symbol'][:-4]}")
                             print(f'Ссылка на валютную пару:\n{binance_url}')
+                            if float(pairs_with_price_binance[pairs_for_binance]['buy']) > 0:
+                                price_binance = round(float(pairs_with_price_binance[pairs_for_binance]['buy']), 5)
+                            else:
+                                price_binance = round(start_capital / float(pairs_with_price_binance[pairs_for_binance]['buy']) / start_capital, 5)
+
                             print(
-                                f"Цена: {round(start_capital / float(pairs_with_price_binance[pairs_for_binance]['buy']) / start_capital, 5)}\n")
+                                f"Цена: {price_binance}\n")
 
                             print(f"2. BestChange: {i['symbol'][:-4]} -> {i['symbol'][-4:]}")
                             print(f"Цена: {course_bectchange}")
@@ -166,6 +207,14 @@ def filter_data_coin(coin):
                     get_binance_api('/api/v3/ticker/price'))),
         coin)  # Получаем список пар монет по фильтру USDT, BUSD, USDC
 
+def scanner_pairs(start_capital, reviews, coin, data_coin, seconds_repeat):
+    while True:
+        app(start_capital=start_capital, reviews=reviews, coin=coin, data_coin=data_coin)
+        print(f'В данный момент рабочих связок нет.. Проверим через {seconds_repeat} минут')
+        time.sleep(seconds_repeat * 60)
+
+
+
 def main():
     coin = input('Введите стартовую монету (USDT - по умолчанию, USDC, BUSD): ')
     if coin not in ['USDT', 'USDC', 'BUSD'] and coin != '':
@@ -198,10 +247,8 @@ def main():
     print('Если захотите выйти из программы нажмите crtl + c')
     data_coin = filter_data_coin(coin)
     get_num_coin_bestchange()
-    while True:
-        app(start_capital=start_capital, reviews=reviews, coin=coin, data_coin=data_coin)
-        print(f'В данный момент рабочих связок нет.. Проверим через {seconds_repeat} минут')
-        time.sleep(seconds_repeat * 60)
+
+    scanner_pairs(start_capital, reviews, coin, data_coin, seconds_repeat)
 
 
 if __name__ == '__main__':
