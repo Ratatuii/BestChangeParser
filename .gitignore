@@ -123,6 +123,7 @@ venv.bak/
 # mkdocs documentation
 /site
 
+info.zip
 # mypy
 .mypy_cache/
 .dmypy.json
